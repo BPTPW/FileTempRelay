@@ -35,7 +35,7 @@ cp config-example.json config.json
 
 - `password`：访问口令
 - `sizeLimit`：上传大小限制（字节）
-- `addWebAuthn`：是否启用 WebAuthn
+- `addWebAuthn`：是否允许添加 WebAuthn 通信密钥
 
 ### 3. 启动
 
