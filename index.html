@@ -1,0 +1,1094 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>临时文件仓库</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+      :root {
+        --bg: #f4efe7;
+        --bg-accent: #f9f4ec;
+        --ink: #1b1a18;
+        --muted: #6b6a65;
+        --line: #ded5c8;
+        --brand: #ff7a2f;
+        --brand-dark: #e85f12;
+        --paper: #fffdfa;
+        --shadow: rgba(27, 26, 24, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", sans-serif;
+        color: var(--ink);
+        background: radial-gradient(circle at top, #fff1dc 0%, var(--bg) 48%, #efe7db 100%);
+        min-height: 100vh;
+      }
+
+      header {
+        padding: 32px 20px 12px;
+        max-width: 1080px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        font-size: clamp(2rem, 3vw, 2.8rem);
+        letter-spacing: -0.02em;
+        margin: 0 0 8px;
+      }
+
+      p.lead {
+        margin: 0;
+        color: var(--muted);
+        max-width: 620px;
+      }
+
+      .panel {
+        max-width: 1080px;
+        margin: 0 auto 32px;
+        padding: 20px;
+      }
+
+      .controls {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 18px 18px 52px;
+        display: grid;
+        gap: 12px;
+        box-shadow: 0 16px 40px var(--shadow);
+        position: relative;
+      }
+
+      .control-row {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        align-items: center;
+      }
+
+      label {
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+
+      input[type="password"],
+      input[type="file"],
+      input[type="text"],
+      textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        font-family: inherit;
+        font-size: 16px;
+      }
+      #fileInput{
+        font-size: 14px;
+      }
+
+      small {
+        color: var(--muted);
+      }
+
+      .controls-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .toggle {
+        position: relative;
+        width: 52px;
+        height: 30px;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .toggle-track {
+        position: absolute;
+        inset: 0;
+        background: var(--line);
+        border-radius: 999px;
+        transition: background 0.2s ease;
+      }
+
+      .toggle-thumb {
+        position: absolute;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--paper);
+        box-shadow: 0 4px 10px rgba(27, 26, 24, 0.18);
+        left: 4px;
+        top: 4px;
+        transition: transform 0.2s ease;
+      }
+
+      .toggle input:checked + .toggle-track {
+        background: var(--brand);
+      }
+
+      .toggle input:checked + .toggle-track + .toggle-thumb {
+        transform: translateX(22px);
+      }
+
+      .size-hint {
+        position: absolute;
+        left: 18px;
+        bottom: 12px;
+        font-size: 0.85rem;
+      }
+
+      .btn {
+        border: none;
+        border-radius: 999px;
+        padding: 10px 14px;
+        font-weight: 600;
+        cursor: pointer;
+        background: var(--brand);
+        color: white;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(232, 95, 18, 0.25);
+      }
+
+      .btn.secondary {
+        background: transparent;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+
+      .list {
+        margin-top: 24px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 20px;
+        min-height: 240px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .list.dragover {
+        outline: 2px dashed var(--brand);
+        outline-offset: -10px;
+        background: linear-gradient(135deg, rgba(255, 122, 47, 0.12), transparent);
+      }
+
+      .list::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at top right, rgba(255, 122, 47, 0.08), transparent 60%);
+        pointer-events: none;
+      }
+
+        .list h2 {
+          margin: 16px 0 8px;
+          font-size: 1.2rem;
+        }
+
+      .item {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .item:last-child {
+        border-bottom: none;
+      }
+
+      .item.uploading h3 {
+        opacity: 0.85;
+      }
+
+      .item h3 {
+        margin: 0 0 6px;
+        font-size: 1.05rem;
+      }
+
+      .meta {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      .tag {
+        display: inline-flex;
+        padding: 2px 10px;
+        border-radius: 999px;
+        background: var(--bg-accent);
+        font-weight: 600;
+        color: var(--muted);
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .progress-track {
+        height: 6px;
+        background: var(--bg-accent);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-top: 10px;
+      }
+
+      .progress-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--brand), var(--brand-dark));
+        transition: width 0.15s ease;
+      }
+
+      .icon-btn {
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        padding: 6px;
+      }
+
+      .icon-btn img {
+        width: 22px;
+        height: 22px;
+      }
+
+      .empty {
+        text-align: center;
+        color: var(--muted);
+        padding: 14px 0;
+      }
+
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: var(--ink);
+        color: white;
+        padding: 12px 16px;
+        border-radius: 12px;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.25s ease;
+        pointer-events: none;
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(27, 26, 24, 0.35);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .modal.open {
+        display: flex;
+      }
+
+      .modal-card {
+        background: var(--paper);
+        border-radius: 18px;
+        padding: 20px;
+        width: min(720px, 100%);
+        box-shadow: 0 16px 40px var(--shadow);
+      }
+
+      .modal-card h2 {
+        margin: 0 0 10px;
+      }
+
+      textarea {
+        min-height: 160px;
+        resize: vertical;
+      }
+
+      @media (max-width: 720px) {
+        .controls {
+          padding: 14px 14px 40px;
+        }
+        .size-hint {
+          left: 14px;
+          bottom: 10px;
+        }
+        .item {
+          grid-template-columns: 1fr;
+        }
+        .actions {
+          justify-content: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>临时文件仓库</h1>
+      <p class="lead">上传小文件或短文本，跨设备临时共享，一小时后自动清理。</p>
+    </header>
+
+    <section class="panel">
+      <div class="controls">
+        <div class="control-row">
+          <div>
+            <input id="fileInput" type="file" multiple />
+          </div>
+          <div>
+            <button class="btn" id="openText" aria-label="添加文本">
+              <img src="/assets/text.document.white.svg" alt="添加文本" style="width: 14px;"/>
+            </button>
+          </div>
+          <div>
+            <button class="btn secondary" id="openPasskey" style="display:none;">添加通行密钥</button>
+          </div>
+        </div>
+        <div class="controls-footer" id="preferPasskeyRow" style="display:none;">
+          <div class="toggle-row">
+            <span>默认使用通行密钥</span>
+            <label class="toggle">
+              <input id="preferPasskey" type="checkbox" />
+              <span class="toggle-track"></span>
+              <span class="toggle-thumb"></span>
+            </label>
+          </div>
+        </div>
+        <small id="sizeHint" class="size-hint">大小上限：--</small>
+      </div>
+
+      <div id="list" class="list">
+        <div class="empty">拖拽文件到此处，或使用上方按钮上传。</div>
+      </div>
+    </section>
+
+    <div id="toast" class="toast">完成</div>
+
+    <div id="passwordModal" class="modal">
+      <div class="modal-card">
+        <h2>请选择认证方式</h2>
+        <input id="passwordField" type="password" placeholder="访问密码" />
+        <input id="authUsernameField" type="text" placeholder="用户名（通行密钥可选）" style="margin-top:10px;" />
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px; flex-wrap:wrap;">
+          <button class="btn secondary" id="passwordCancel">取消</button>
+          <button class="btn secondary" id="passkeyAuth">通行密钥</button>
+          <button class="btn" id="passwordConfirm">使用密码</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="passkeyModal" class="modal">
+      <div class="modal-card">
+        <h2>添加通行密钥</h2>
+        <input id="passkeyUsername" type="text" placeholder="用户名" />
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
+          <button class="btn secondary" id="passkeyCancel">取消</button>
+          <button class="btn" id="passkeyConfirm">开始添加</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="textModal" class="modal">
+      <div class="modal-card">
+        <h2>新建文本</h2>
+        <textarea id="textInput" placeholder="在这里粘贴文本..."></textarea>
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
+          <button class="btn secondary" id="closeText">取消</button>
+          <button class="btn" id="saveText">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="previewModal" class="modal">
+      <div class="modal-card">
+        <h2>预览</h2>
+        <textarea id="previewContent" readonly></textarea>
+        <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+          <button class="btn secondary" id="closePreview">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+    <script>
+      const listEl = document.getElementById("list");
+      const fileInput = document.getElementById("fileInput");
+      const passwordModal = document.getElementById("passwordModal");
+      const passwordField = document.getElementById("passwordField");
+      const authUsernameField = document.getElementById("authUsernameField");
+      const passwordConfirm = document.getElementById("passwordConfirm");
+      const passwordCancel = document.getElementById("passwordCancel");
+      const passkeyAuthBtn = document.getElementById("passkeyAuth");
+      const openTextBtn = document.getElementById("openText");
+      const openPasskeyBtn = document.getElementById("openPasskey");
+      const preferPasskeyRow = document.getElementById("preferPasskeyRow");
+      const preferPasskeyToggle = document.getElementById("preferPasskey");
+      const passkeyModal = document.getElementById("passkeyModal");
+      const passkeyUsername = document.getElementById("passkeyUsername");
+      const passkeyConfirm = document.getElementById("passkeyConfirm");
+      const passkeyCancel = document.getElementById("passkeyCancel");
+      const textModal = document.getElementById("textModal");
+      const closeTextBtn = document.getElementById("closeText");
+      const saveTextBtn = document.getElementById("saveText");
+      const textInput = document.getElementById("textInput");
+      const previewModal = document.getElementById("previewModal");
+      const previewContent = document.getElementById("previewContent");
+      const closePreviewBtn = document.getElementById("closePreview");
+      const toast = document.getElementById("toast");
+      const sizeHint = document.getElementById("sizeHint");
+
+      let authResolver = null;
+      let uploadToken = "";
+      let uploadTokenExpiresAt = 0;
+
+      const pendingUploads = new Map();
+
+      let sizeLimit = 0;
+      let addWebAuthn = false;
+      let webauthnAvailable = false;
+
+      const PREFER_PASSKEY_KEY = "preferPasskey";
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add("show");
+        setTimeout(() => toast.classList.remove("show"), 2000);
+      }
+
+      function bytesToLabel(bytes) {
+        if (!bytes) return "--";
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+      }
+
+      async function loadList() {
+        const res = await fetch("/api/list");
+        const data = await res.json();
+        renderList(data.items || []);
+      }
+
+      function renderList(items) {
+        const renderItem = (item) => {
+          const createdAt = new Date(item.createdAt).toLocaleString();
+          const expiresAt = new Date(item.expiresAt).toLocaleTimeString();
+          const size = bytesToLabel(item.size || 0);
+          const tag = item.type === "file" ? "文件" : "文本";
+          const actions =
+            item.type === "file"
+              ? `
+                <button class="icon-btn" data-action="download" data-id="${item.id}" title="下载">
+                  <img src="/assets/square.and.arrow.down.svg" alt="下载" />
+                </button>
+                <button class="icon-btn" data-action="copy" data-id="${item.id}" title="复制链接">
+                  <img src="/assets/link.svg" alt="复制链接" />
+                </button>
+                <button class="icon-btn" data-action="delete" data-id="${item.id}" title="删除">
+                  <img src="/assets/trash.svg" alt="删除" />
+                </button>
+              `
+              : `
+                <button class="icon-btn" data-action="preview" data-id="${item.id}" title="预览">
+                  <img src="/assets/text.document.svg" alt="预览" />
+                </button>
+                <button class="icon-btn" data-action="delete" data-id="${item.id}" title="删除">
+                  <img src="/assets/trash.svg" alt="删除" />
+                </button>
+              `;
+          return `
+              <div class="item">
+                <div>
+                  <h3>${item.name}</h3>
+                  <div class="meta">
+                    <span class="tag">${tag}</span>
+                    <span>${size}</span>
+                    <span>上传于 ${createdAt}</span>
+                    <span>过期时间 ${expiresAt}</span>
+                  </div>
+                </div>
+                <div class="actions">${actions}</div>
+              </div>
+            `;
+        };
+
+        const files = items.filter((item) => item.type === "file");
+        const texts = items.filter((item) => item.type === "text");
+
+        const fileSectionBody = files.length
+          ? files.map(renderItem).join("")
+          : '<div class="empty">暂无文件</div>';
+
+        const textSectionBody = texts.length
+          ? texts.map(renderItem).join("")
+          : '<div class="empty">暂无文本</div>';
+
+        listEl.innerHTML = `
+          <div class="section" data-section="files">
+            <h2>文件</h2>
+            <div class="section-body">${fileSectionBody}</div>
+          </div>
+          <div class="section" data-section="texts">
+            <h2>文本</h2>
+            <div class="section-body">${textSectionBody}</div>
+          </div>
+        `;
+        renderPendingUploads();
+      }
+
+      function renderPendingUploads() {
+        if (!pendingUploads.size) return;
+        const body = listEl.querySelector("[data-section='files'] .section-body");
+        if (!body) return;
+        const empty = body.querySelector(".empty");
+        if (empty) {
+          empty.remove();
+        }
+        pendingUploads.forEach((entry) => {
+          createUploadRow(entry.file, entry.uploadId, entry.statusText, {
+            register: false,
+            percent: entry.percent,
+          });
+        });
+      }
+
+      function ensureSections() {
+        if (listEl.querySelector("[data-section='files']")) return;
+        listEl.innerHTML = `
+          <div class="section" data-section="files">
+            <h2>文件</h2>
+            <div class="section-body"><div class="empty">暂无文件</div></div>
+          </div>
+          <div class="section" data-section="texts">
+            <h2>文本</h2>
+            <div class="section-body"><div class="empty">暂无文本</div></div>
+          </div>
+        `;
+      }
+
+      function createUploadRow(file, uploadId, statusText = "等待上传", options = {}) {
+        ensureSections();
+        const body = listEl.querySelector("[data-section='files'] .section-body");
+        if (!body) return;
+        const { register = true, percent = 0 } = options;
+        const row = document.createElement("div");
+        row.className = "item uploading";
+        row.dataset.uploadId = uploadId;
+        row.innerHTML = `
+          <div>
+            <h3>${file.name}</h3>
+            <div class="meta">
+              <span class="tag">文件</span>
+              <span>${bytesToLabel(file.size)}</span>
+              <span class="upload-status">${statusText}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-bar" style="width: ${typeof percent === "number" ? percent : 0}%"></div>
+            </div>
+          </div>
+        `;
+        const empty = body.querySelector(".empty");
+        if (empty) {
+          empty.remove();
+        }
+        body.prepend(row);
+        if (register) {
+          pendingUploads.set(uploadId, {
+            uploadId,
+            file,
+            statusText,
+            percent: typeof percent === "number" ? percent : null,
+          });
+        }
+      }
+
+      function updateUploadRow(uploadId, percent, statusText) {
+        const row = listEl.querySelector(`[data-upload-id='${uploadId}']`);
+        if (!row) return;
+        const bar = row.querySelector(".progress-bar");
+        const status = row.querySelector(".upload-status");
+        let nextStatus = statusText;
+        if (bar && typeof percent === "number") {
+          bar.style.width = `${percent}%`;
+        }
+        if (status) {
+          if (!nextStatus) {
+            nextStatus = typeof percent === "number" ? `上传中 ${percent}%` : "上传中";
+          }
+          status.textContent = nextStatus;
+        }
+        const record = pendingUploads.get(uploadId);
+        if (record) {
+          record.percent = typeof percent === "number" ? percent : null;
+          record.statusText = nextStatus || record.statusText;
+        }
+      }
+
+      function removeUploadRow(uploadId) {
+        const row = listEl.querySelector(`[data-upload-id='${uploadId}']`);
+        if (row) {
+          row.remove();
+        }
+        pendingUploads.delete(uploadId);
+      }
+
+      function uploadWithProgress(formData, uploadId) {
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", "/api/upload");
+          xhr.responseType = "json";
+          if (uploadToken) {
+            xhr.setRequestHeader("x-upload-token", uploadToken);
+          }
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percent = Math.round((event.loaded / event.total) * 100);
+              updateUploadRow(uploadId, percent);
+            } else {
+              updateUploadRow(uploadId, null);
+            }
+          };
+          xhr.onload = () => {
+            resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, body: xhr.response });
+          };
+          xhr.onerror = () => reject(new Error("upload failed"));
+          xhr.send(formData);
+        });
+      }
+
+      async function ensureUploadToken() {
+        if (uploadToken && uploadTokenExpiresAt > Date.now()) {
+          return uploadToken;
+        }
+        if (webauthnAvailable && preferPasskeyToggle.checked) {
+          const token = await passkeyAuthFlow("", { silent: true });
+          if (token) {
+            return token;
+          }
+        }
+        const auth = await requestAuth();
+        if (!auth) {
+          showToast("需要认证");
+          return "";
+        }
+        if (auth.method === "passkey") {
+          return await passkeyAuthFlow(auth.username);
+        }
+        return await passwordAuthFlow(auth.password);
+      }
+
+      async function passwordAuthFlow(passwordValue) {
+        const password = typeof passwordValue === "string" ? passwordValue.trim() : (await requestAuth())?.password || "";
+        if (!password) {
+          showToast("需要输入密码");
+          return "";
+        }
+        const res = await fetch("/api/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.error || "认证失败");
+          return "";
+        }
+        uploadToken = data.token || "";
+        uploadTokenExpiresAt = data.expiresAt || 0;
+        return uploadToken;
+      }
+
+      async function passkeyAuthFlow(username, options = {}) {
+        if (!window.SimpleWebAuthnBrowser) {
+          if (!options.silent) {
+            showToast("通行密钥组件未加载");
+          }
+          return "";
+        }
+        const res = await fetch("/api/webauthn/auth/options", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: (username || "").trim() }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          if (!options.silent) {
+            showToast(data.error || "通行密钥认证失败");
+          }
+          return "";
+        }
+        try {
+          const credential = await SimpleWebAuthnBrowser.startAuthentication(data.options);
+          const verifyRes = await fetch("/api/webauthn/auth/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ requestId: data.requestId, response: credential }),
+          });
+          const verifyData = await verifyRes.json();
+          if (!verifyRes.ok) {
+            if (!options.silent) {
+              showToast(verifyData.error || "通行密钥认证失败");
+            }
+            return "";
+          }
+          uploadToken = verifyData.token || "";
+          uploadTokenExpiresAt = verifyData.expiresAt || 0;
+          if (!options.silent) {
+            showToast("通行密钥认证成功");
+          }
+          return uploadToken;
+        } catch (error) {
+          if (!options.silent) {
+            showToast("通行密钥认证已取消");
+          }
+          return "";
+        }
+      }
+
+      function requestAuth() {
+        return new Promise((resolve) => {
+          authResolver = resolve;
+          passwordField.value = "";
+          authUsernameField.value = "";
+          passwordModal.classList.add("open");
+          passwordField.focus();
+        });
+      }
+
+      function closeAuthModal(value) {
+        passwordModal.classList.remove("open");
+        if (authResolver) {
+          authResolver(value || null);
+          authResolver = null;
+        }
+      }
+
+      async function registerPasskey(username) {
+        if (!window.SimpleWebAuthnBrowser) {
+          showToast("通行密钥组件未加载");
+          return;
+        }
+        const res = await fetch("/api/webauthn/register/options", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.error || "通行密钥创建失败");
+          return;
+        }
+        try {
+          const credential = await SimpleWebAuthnBrowser.startRegistration(data.options);
+          const verifyRes = await fetch("/api/webauthn/register/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ requestId: data.requestId, response: credential }),
+          });
+          const verifyData = await verifyRes.json();
+          if (!verifyRes.ok) {
+            showToast(verifyData.error || "通行密钥创建失败");
+            return;
+          }
+          showToast("通行密钥已添加");
+        } catch (error) {
+          showToast("通行密钥创建已取消");
+        }
+      }
+
+      async function uploadFile(file, uploadId, token) {
+        if (!token) {
+          removeUploadRow(uploadId);
+          return;
+        }
+        if (sizeLimit && file.size > sizeLimit) {
+          showToast("文件过大");
+          removeUploadRow(uploadId);
+          return;
+        }
+        updateUploadRow(uploadId, 0, "上传中 0%");
+        const formData = new FormData();
+        formData.append("file", file);
+        try {
+          const result = await uploadWithProgress(formData, uploadId);
+          if (!result.ok) {
+            if (result.status === 401) {
+              uploadToken = "";
+              uploadTokenExpiresAt = 0;
+            }
+            showToast((result.body && result.body.error) || "上传失败");
+            removeUploadRow(uploadId);
+            return;
+          }
+          updateUploadRow(uploadId, 100);
+          showToast("上传成功");
+          removeUploadRow(uploadId);
+          await loadList();
+        } catch (error) {
+          showToast("上传失败");
+          removeUploadRow(uploadId);
+        }
+      }
+
+      async function createText() {
+        const token = await ensureUploadToken();
+        const text = textInput.value;
+        if (!token) return;
+        if (!text.trim()) {
+          showToast("文本为空");
+          return;
+        }
+        if (sizeLimit && new TextEncoder().encode(text).length > sizeLimit) {
+          showToast("文本过大");
+          return;
+        }
+        const res = await fetch("/api/text", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-upload-token": token,
+          },
+          body: JSON.stringify({ text }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          if (res.status === 401) {
+            uploadToken = "";
+            uploadTokenExpiresAt = 0;
+          }
+          showToast(data.error || "保存失败");
+          return;
+        }
+        textInput.value = "";
+        textModal.classList.remove("open");
+        showToast("保存成功");
+        await loadList();
+      }
+
+      async function deleteItem(id) {
+        const res = await fetch(`/api/item/${id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.error || "删除失败");
+          return;
+        }
+        showToast("已删除");
+        await loadList();
+      }
+
+      async function previewText(id) {
+        const res = await fetch(`/api/text/${id}`);
+        if (!res.ok) {
+          showToast("预览失败");
+          return;
+        }
+        const text = await res.text();
+        previewContent.value = text;
+        previewModal.classList.add("open");
+      }
+
+      async function copyDownloadLink(id) {
+        const url = `${window.location.origin}/api/download/${id}`;
+        try {
+          await navigator.clipboard.writeText(url);
+          showToast("链接已复制");
+        } catch (error) {
+          const textarea = document.createElement("textarea");
+          textarea.value = url;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.focus();
+          textarea.select();
+          const ok = document.execCommand("copy");
+          document.body.removeChild(textarea);
+          showToast(ok ? "链接已复制" : "复制失败");
+        }
+      }
+
+      listEl.addEventListener("click", (event) => {
+        const btn = event.target.closest("button[data-action]");
+        if (!btn) return;
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+        if (action === "download") {
+          window.location.href = `/api/download/${id}`;
+          return;
+        }
+        if (action === "copy") {
+          copyDownloadLink(id);
+          return;
+        }
+        if (action === "delete") {
+          deleteItem(id);
+        }
+        if (action === "preview") {
+          previewText(id);
+        }
+      });
+
+      async function uploadFiles(fileList) {
+        const files = Array.from(fileList || []);
+        if (!files.length) return;
+        const queue = files.map((file) => ({
+          file,
+          uploadId: `upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        }));
+        queue.forEach(({ file, uploadId }) => createUploadRow(file, uploadId));
+        const token = await ensureUploadToken();
+        if (!token) {
+          queue.forEach(({ uploadId }) => removeUploadRow(uploadId));
+          return;
+        }
+        for (const { file, uploadId } of queue) {
+          await uploadFile(file, uploadId, token);
+        }
+      }
+
+      fileInput.addEventListener("change", async () => {
+        await uploadFiles(fileInput.files);
+        fileInput.value = "";
+      });
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        listEl.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          listEl.classList.add("dragover");
+        });
+      });
+
+      ["dragleave", "drop"].forEach((eventName) => {
+        listEl.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          listEl.classList.remove("dragover");
+        });
+      });
+
+      listEl.addEventListener("drop", async (event) => {
+        await uploadFiles(event.dataTransfer.files);
+      });
+
+      openTextBtn.addEventListener("click", () => {
+        textModal.classList.add("open");
+        textInput.focus();
+      });
+
+      closeTextBtn.addEventListener("click", () => {
+        textModal.classList.remove("open");
+      });
+
+      saveTextBtn.addEventListener("click", async () => {
+        await createText();
+      });
+
+      passwordConfirm.addEventListener("click", () => {
+        closeAuthModal({
+          method: "password",
+          password: passwordField.value,
+          username: authUsernameField.value,
+        });
+      });
+
+      passwordCancel.addEventListener("click", () => {
+        closeAuthModal(null);
+      });
+
+      passkeyAuthBtn.addEventListener("click", () => {
+        closeAuthModal({
+          method: "passkey",
+          username: authUsernameField.value,
+        });
+      });
+
+      passwordField.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          closeAuthModal({
+            method: "password",
+            password: passwordField.value,
+            username: authUsernameField.value,
+          });
+        }
+      });
+
+      openPasskeyBtn.addEventListener("click", () => {
+        passkeyModal.classList.add("open");
+        passkeyUsername.focus();
+      });
+
+      passkeyCancel.addEventListener("click", () => {
+        passkeyModal.classList.remove("open");
+      });
+
+      passkeyConfirm.addEventListener("click", async () => {
+        const username = passkeyUsername.value.trim();
+        if (!username) {
+          showToast("请输入用户名");
+          return;
+        }
+        passkeyModal.classList.remove("open");
+        passkeyUsername.value = "";
+        await registerPasskey(username);
+      });
+
+      preferPasskeyToggle.addEventListener("change", () => {
+        localStorage.setItem(PREFER_PASSKEY_KEY, preferPasskeyToggle.checked ? "1" : "0");
+      });
+
+      closePreviewBtn.addEventListener("click", () => {
+        previewModal.classList.remove("open");
+      });
+
+      fetch("/api/list")
+        .then((res) => res.json())
+        .then((data) => {
+          sizeLimit = data.sizeLimit || 0;
+          addWebAuthn = Boolean(data.addWebAuthn);
+          webauthnAvailable = Boolean(window.SimpleWebAuthnBrowser);
+          openPasskeyBtn.style.display = addWebAuthn ? "inline-flex" : "none";
+          passkeyAuthBtn.style.display = webauthnAvailable ? "inline-flex" : "none";
+          authUsernameField.style.display = webauthnAvailable ? "block" : "none";
+          preferPasskeyRow.style.display = webauthnAvailable ? "flex" : "none";
+          const preferPasskeySaved = localStorage.getItem(PREFER_PASSKEY_KEY);
+          preferPasskeyToggle.checked = preferPasskeySaved === "1";
+          sizeHint.textContent = `大小上限：${bytesToLabel(sizeLimit)}`;
+          renderList(data.items || []);
+        })
+        .catch(() => loadList());
+    </script>
+  </body>
+</html>

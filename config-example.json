@@ -1,0 +1,5 @@
+{
+    "password":"123456",
+    "sizeLimit": 10485760,
+    "addWebAuthn": true
+}
